@@ -6,7 +6,7 @@ public class Fermata {
 
 	private int idFermata;
 	private String nome;
-	private LatLng coords;
+	private LatLng coords;		//grazie alla libreria simplelatIng
 
 	public Fermata(int idFermata, String nome, LatLng coords) {
 		this.idFermata = idFermata;

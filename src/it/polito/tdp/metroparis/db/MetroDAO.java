@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.javadocmd.simplelatlng.LatLng;
 
@@ -69,4 +70,85 @@ public class MetroDAO {
 	}
 
 
+	
+	/**
+	 * Metodo che mi permette di capire se esiste una connessione diretta (non ci sono stazioni in mezzo) tra la stazione di partenza e la stazione di arrivo
+	 * @param partenza
+	 * @param arrivo
+	 * @return false se non esiste soluzione, true se invece la connessione esiste
+	 */
+	
+	public boolean esisteConnessione(Fermata partenza, Fermata arrivo) {
+		
+		
+		String sql="SELECT COUNT(*) AS conta " +
+				"FROM connessione " + 
+				"WHERE id_stazP=? AND id_stazA=?";
+		
+		Connection conn= DBConnect.getConnection();
+
+		try {
+		PreparedStatement st=conn.prepareStatement(sql);
+		st.setInt(1, partenza.getIdFermata());
+		st.setInt(2, arrivo.getIdFermata());
+		
+		ResultSet rs=st.executeQuery();
+		
+		rs.next();
+		
+		int numero=rs.getInt("conta");
+		
+		conn.close();
+		
+		return (numero>0);	//se il numero è 0 significa che c'è una connessione diretta e quindi il metodo ritorna true, se è maggiore di 0 significa che non c'è connessione diretta e quindi il metodo ritorna false
+		
+		}catch(SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return false;
+		
+	}
+
+	
+	
+	/**
+	 * Metodo che permette di ricavare una lista di tutte le fermate che sono collegate direttamente (attraverso un arco solo)
+	 * alla fermata di partenza
+	 * @param partenza fermata
+	 * @param idMap mappa di fermate identificate con un id numerico
+	 * @return lista di {@link Fermata} 
+	 */
+	public List<Fermata> stazioneArrivo(Fermata partenza, Map<Integer, Fermata> idMap) {
+		
+		String sql="SELECT id_stazA " +
+				"FROM connessione " + 
+				"WHERE id_stazP=? ";
+		
+		Connection conn= DBConnect.getConnection();
+		try {
+			
+			PreparedStatement st=conn.prepareStatement(sql);
+			st.setInt(1, partenza.getIdFermata());
+			ResultSet rs=st.executeQuery();
+			List<Fermata> result=new ArrayList<>();
+			
+			while(rs.next()) {
+				result.add(idMap.get(rs.getInt("id_stazA")));	//aggiungo la stazione di arrivo alla lista, grazie alla mappa che associa l'id  presente nel dataBase alla stazione presente nella mappa
+			
+			}
+			conn.close();
+			return result;
+		
+		}catch(SQLException e) {
+			e.printStackTrace();
+		}
+		
+		
+		return null;
+	}
+	
+	
+	
+	
 }

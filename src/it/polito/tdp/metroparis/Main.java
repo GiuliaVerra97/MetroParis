@@ -25,3 +25,7 @@ public class Main extends Application {
 		launch(args);
 	}
 }
+
+//la libreria simplelatIng permette di calcolare le coordinate dei punti 
+
+
