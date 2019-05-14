@@ -3,34 +3,35 @@ package it.polito.tdp.metroparis.model;
 import java.util.*;
 
 import org.jgrapht.Graph;
+import org.jgrapht.GraphPath;
 import org.jgrapht.Graphs;
+import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.GraphIterator;
+
+import com.javadocmd.simplelatlng.LatLngTool;
+import com.javadocmd.simplelatlng.util.LengthUnit;
 
 import it.polito.tdp.metroparis.db.MetroDAO;
 
 public class Model{
 	
 	
-	
-	//per creare una classe interna all'interno del model devo devo:
-	
-	
-	
-	//crea il grafo e lo gestisce utilizzando i metodi opportuni
-	//per realizzare il grafo è necessario prendere dal DB le fermate che saranno i vertici del grafo
-	
-	private Graph<Fermata, DefaultEdge>  grafo; //defaultedge se non è pesato
-	private List<Fermata> fermate;		//lista vertici
+	private Graph<Fermata, DefaultWeightedEdge>  grafo; //defaultedge se non è pesato, defaultWeightEdge è pesato
+	private List<Fermata> fermate;						//lista vertici
 	private Map<Integer, Fermata> fermateIdMap;		
 	private Map<Fermata, Fermata> backVisit;	
 
 	
+	
+	
+	
 	public void creaGrafo() {
 		
-		grafo=new SimpleDirectedGraph<>(DefaultEdge.class);		//grafo semplice, orientato
+		grafo=new SimpleDirectedGraph<>(DefaultWeightedEdge.class);		//grafo semplice, orientato con peso
 		
 		//aggiungere vertici
 		MetroDAO dao=new MetroDAO();
@@ -44,21 +45,7 @@ public class Model{
 		}
 		
 
-		//aggiungere archi-ci possono essere 3 metodi:
-		
-		/*1- posso prendere tutte le combinazioni delle fermate e vedere se esiste una connessione tra le due
-			 non va bene perchè ci impiega troppo tempo
-			 
-		for(Fermata partenza:this.grafo.vertexSet()) {
-			for(Fermata arrivo:this.grafo.vertexSet()) {
-				if(dao.esisteConnessione(partenza, arrivo)) {
-					this.grafo.addEdge(partenza, arrivo);
-				}
-				
-			}
-		}*/
-			
-		//2- per ogni stazine di partenza prendo una stazione a lei connessa direttamente(fermata di arrivo) e genero la connessione
+		//aggiungi archi
 		for (Fermata partenza: this.grafo.vertexSet()) {
 			
 			List<Fermata> arrivi=dao.stazioneArrivo(partenza, fermateIdMap);
@@ -70,7 +57,18 @@ public class Model{
 		}
 			
 		
-		//3- metodo dalla tabella connessione c'è già una colonna che indica la partenza e una l'arrivo, se non ci fosse già una tabella devo "cercare l'info da altre tabelle e le connetto tra loro"
+		List<ConnessioneVelocita> archiPesati=dao.getConnessioneVelocita();
+		for(ConnessioneVelocita con : archiPesati) {
+			Fermata partenza=fermateIdMap.get(con.getStazioneP());
+			Fermata arrivo=fermateIdMap.get(con.getStazioneA());
+			double distanza=LatLngTool.distance(partenza.getCoords(), arrivo.getCoords(), LengthUnit.KILOMETER);
+			double peso=distanza/con.getVelocita()*3600;
+			Graphs.addEdgeWithVertices(grafo, partenza, arrivo, peso);
+			//oppure si può scrivere:	grafo.setEdgeWeight(partenza, arrivo, peso);
+			
+		}
+		
+		
 		
 	}
 
@@ -89,20 +87,16 @@ public class Model{
 		List<Fermata> result=new ArrayList<Fermata>();
 		backVisit=new HashMap<>();
 		
-		GraphIterator<Fermata, DefaultEdge> iteratore=new BreadthFirstIterator<Fermata, DefaultEdge>(this.grafo, source); //mi dice su quale grafo intersre, se non specifico il vertice di partenza ne sceglie uno di default
+		GraphIterator<Fermata, DefaultWeightedEdge> iteratore=new BreadthFirstIterator<Fermata, DefaultWeightedEdge>(this.grafo, source); //mi dice su quale grafo intersre, se non specifico il vertice di partenza ne sceglie uno di default
 		
 		iteratore.addTraversalListener(new EdgeTraversedListner(grafo, backVisit));
-		
-		//ogni interatore mi serve per una sola iterazione, per farne un'altra devo creare un nuovo interatore
-		
+				
 		backVisit.put(source, null);		//definisco l'origine sorgente, tutti i nodi hanno un padre eccetto la radice che non ne ha e quindi metto null
 		
 		while(iteratore.hasNext()) {
 			result.add(iteratore.next());		//next() è un metodo che restituisce l'elemento e avanza in quello successivo
 		}
-		
-		//System.out.println(backVisit);
-		
+				
 		return result;
 		
 		
@@ -140,38 +134,31 @@ public class Model{
 	
 
 
-	public Graph<Fermata, DefaultEdge> getGrafo() {
+	public Graph<Fermata, DefaultWeightedEdge> getGrafo() {
 		return grafo;
-	}
-
-	public void setGrafo(Graph<Fermata, DefaultEdge> grafo) {
-		this.grafo = grafo;
 	}
 	
 	
 	public List<Fermata> getFermate() {
-		return fermate;
+		MetroDAO dao=new MetroDAO();
+		return dao.getAllFermate();
 	}
 
-
-	public void setFermate(List<Fermata> fermate) {
-		this.fermate = fermate;
+	
+	
+	
+	/**
+	 * Metodo utile per trovare il cammino minimo tra una fermata di partenza e una di arrivo
+	 * @param partenza 
+	 * @param arrivo
+	 * @return lista di {@link fermata}
+	 */
+	public List<Fermata> trovaCamminoMinimo(Fermata partenza, Fermata arrivo){
+		this.creaGrafo();
+		DijkstraShortestPath<Fermata, DefaultWeightedEdge> dj=new DijkstraShortestPath<Fermata, DefaultWeightedEdge>(this.grafo);
+		GraphPath<Fermata, DefaultWeightedEdge> path=dj.getPath(partenza, arrivo);
+		return path.getVertexList();
 	}
-
-
-	public Map<Integer, Fermata> getFermateIdMap() {
-		return fermateIdMap;
-	}
-
-
-	public void setFermateIdMap(Map<Integer, Fermata> fermateIdMap) {
-		this.fermateIdMap = fermateIdMap;
-	}
-	
-	
-	
-	
-	
 	
 	
 

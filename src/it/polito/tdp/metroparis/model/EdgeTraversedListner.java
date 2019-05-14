@@ -27,16 +27,17 @@ import org.jgrapht.event.EdgeTraversalEvent;
 import org.jgrapht.event.TraversalListener;
 import org.jgrapht.event.VertexTraversalEvent;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
-public class EdgeTraversedListner implements TraversalListener<Fermata, DefaultEdge>{
+public class EdgeTraversedListner implements TraversalListener<Fermata, DefaultWeightedEdge>{
 
 	
 	Map<Fermata, Fermata> back;		//mappa che contiene gli archi: come chiave la fermata figlia e come valore la fermata padre
-	Graph<Fermata, DefaultEdge> grafo;
+	Graph<Fermata, DefaultWeightedEdge> grafo;
 	
 	
 	
-	public EdgeTraversedListner( Graph<Fermata, DefaultEdge> grafo, Map<Fermata, Fermata> back) {
+	public EdgeTraversedListner( Graph<Fermata, DefaultWeightedEdge> grafo, Map<Fermata, Fermata> back) {
 		super();
 		this.back = back;
 		this.grafo=grafo;
@@ -61,7 +62,7 @@ public class EdgeTraversedListner implements TraversalListener<Fermata, DefaultE
 	
 
 	@Override
-	public void edgeTraversed(EdgeTraversalEvent<DefaultEdge> ev) { 	//ev evento
+	public void edgeTraversed(EdgeTraversalEvent<DefaultWeightedEdge> ev) { 	//ev evento
 		/* back codifica relazioni del tipo child-parent
 		 * Per ogni nuovo vertice child scoperto è necessario che:
 		 * 	-child sia ancora sconosciuto(non ancora visitato)

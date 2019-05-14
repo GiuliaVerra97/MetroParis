@@ -23,7 +23,12 @@ public class TestModel {
 	System.out.println("La stazione di arrivo è: "+fermataFinale);
 	List<Fermata> percorso=m.percorsoFinoA(fermataFinale);
 	System.out.println("il percorso per raggiungerla è: "+percorso);
+	
+	List<Fermata> camminoMinimo=m.trovaCamminoMinimo(source, fermataFinale);
+	System.out.println("Cammino minimo\n"+camminoMinimo);
+	
 	}
+	
 	
 	
 }
