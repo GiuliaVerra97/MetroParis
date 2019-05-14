@@ -86,6 +86,8 @@ public class Model{
 	 */
 	public List<Fermata> fermateRaggiungibili(Fermata source){
 		
+		this.creaGrafo();
+		
 		List<Fermata> result=new ArrayList<Fermata>();
 		backVisit=new HashMap<>();
 		
@@ -144,36 +146,13 @@ public class Model{
 		return grafo;
 	}
 
-	public void setGrafo(Graph<Fermata, DefaultEdge> grafo) {
-		this.grafo = grafo;
-	}
-	
 	
 	public List<Fermata> getFermate() {
-		return fermate;
+		MetroDAO dao=new MetroDAO();
+		return dao.getAllFermate();
 	}
 
 
-	public void setFermate(List<Fermata> fermate) {
-		this.fermate = fermate;
-	}
-
-
-	public Map<Integer, Fermata> getFermateIdMap() {
-		return fermateIdMap;
-	}
-
-
-	public void setFermateIdMap(Map<Integer, Fermata> fermateIdMap) {
-		this.fermateIdMap = fermateIdMap;
-	}
-	
-	
-	
-	
-	
-	
-	
 
 	
 }
